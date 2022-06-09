@@ -9,6 +9,29 @@ namespace rhoban_graphs
 class PathFinder
 {
 public:
+  struct NodeToExplore
+  {
+    NodeToExplore()
+    {
+    }
+
+    NodeToExplore(Graph::Node node, double score) : node(node), score(score)
+    {
+    }
+
+    Graph::Node node;
+    double score;
+
+    bool operator<(const NodeToExplore& other) const
+    {
+      if (score != other.score)
+      {
+        return score < other.score;
+      }
+      return node < other.node;
+    }
+  };
+
   static std::vector<Graph::Node> findPath(Graph& graph, Graph::Node start, Graph::Node goal, double* score = NULL,
                                            std::map<Graph::Node, double> heuristic = {});
 };

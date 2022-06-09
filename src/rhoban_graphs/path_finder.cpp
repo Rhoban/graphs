@@ -15,64 +15,57 @@ std::vector<Graph::Node> PathFinder::findPath(Graph& graph, Graph::Node start, G
   std::map<Graph::Node, double> distances;
 
   // Explored nodes
-  std::set<Graph::Node> toExplore;
+  std::set<PathFinder::NodeToExplore> toExplore;
+  std::map<Graph::Node, PathFinder::NodeToExplore> knownNodes;
 
   // Initalizing with start edge
   distances[start] = 0;
-  toExplore.insert(start);
+  knownNodes[0] = NodeToExplore(0, 0);
+  toExplore.insert(knownNodes[0]);
 
   while (toExplore.size())
   {
     // Select the next node
-    // XXX the performance of this can be improved by maintaining
-    // a more adapted control structure
-    Graph::Node node;
-    double smallest = -1;
-    for (auto& tmpNode : toExplore)
-    {
-      double dist = distances[tmpNode];
-
-      if (!heuristic.empty())
-      {
-        dist += heuristic[tmpNode];
-      }
-
-      if (smallest < 0 || dist < smallest)
-      {
-        smallest = distances[tmpNode];
-        node = tmpNode;
-      }
-    }
+    auto entry = *toExplore.begin();
+    toExplore.erase(entry);
+    Graph::Node node = entry.node;
 
     // Removing the node
     double weight = distances[node];
-    toExplore.erase(node);
 
     // Updating
     for (auto& edge : graph.edges[node])
     {
       auto target = ((edge.node1 == node) ? edge.node2 : edge.node1);
-
       double cost = weight + edge.weight;
-
-      // if (!heuristic.empty())
-      // {
-      //   cost += heuristic[target];
-      // }
-
-      if (!distances.count(target))
-      {
-        toExplore.insert(target);
-      }
 
       if (!distances.count(target) || cost < distances[target])
       {
         distances[target] = cost;
         path[target] = node;
+
+        double cost_heuristic = cost;
+
+        if (heuristic.count(target))
+        {
+          cost_heuristic += heuristic[target];
+        }
+        if (!knownNodes.count(target))
+        {
+          knownNodes[target] = NodeToExplore(target, cost_heuristic);
+        }
+        else
+        {
+          toExplore.erase(knownNodes[target]);
+          knownNodes[target].score = cost_heuristic;
+        }
+
+        // Updating heuristic score
+        toExplore.insert(knownNodes[target]);
       }
     }
 
-    if (distances.count(goal) && !toExplore.count(goal))
+    if (node == goal)
     {
       break;
     }
@@ -98,5 +91,4 @@ std::vector<Graph::Node> PathFinder::findPath(Graph& graph, Graph::Node start, G
 
   return nodes;
 }
-
 }  // namespace rhoban_graphs

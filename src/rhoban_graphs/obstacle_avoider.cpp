@@ -3,7 +3,9 @@
 #include <cmath>
 
 #include "rhoban_geometry/segment.h"
-#include "rhoban_graphs/dijkstra.h"
+// #include "rhoban_graphs/dijkstra.h"
+#include "rhoban_graphs/path_finder.h"
+
 #include "rhoban_graphs/graph.h"
 #include "rhoban_graphs/obstacle_avoider.h"
 
@@ -31,6 +33,8 @@ std::vector<Point> ObstacleAvoider::findPath(Point start, Point goal, double acc
   // Avoid intersection checks between nodes from a circle
   std::map<NodePair, size_t> ignoreCollisions;
   std::map<Graph::Node, size_t> nodeObstacle;
+
+  std::map<Graph::Node, double> heuristic;  // heuristic distance from node to target (Euclidian distance)
 
   // Start and goal nodes
   nodePositions[0] = start;
@@ -125,10 +129,19 @@ std::vector<Point> ObstacleAvoider::findPath(Point start, Point goal, double acc
         }
       }
     }
-  }
 
-  // Running Dijkstra
-  auto result = Dijkstra::findPath(graph, 0, 1, score);
+    // Point targetNodePosition = nodePositions[1];
+    Point currentNodePosition = nodePositions[node1];
+
+    heuristic[node1] = currentNodePosition.getDist(goal);
+  }
+  // for (auto& node : graph.nodes)
+  // {
+  //   std::cout << node << " : " << heuristic[node] << std::endl;
+  // }
+  // Running A*
+  auto result = PathFinder::findPath(graph, 0, 1, score, heuristic);
+  // auto result = PathFinder::findPath(graph, 0, 1, score);
 
 #ifdef DEBUG
   // Draw the graph -DEBUG-

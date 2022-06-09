@@ -97,6 +97,7 @@ std::vector<Point> ObstacleAvoider::findPath(Point start, Point goal, double acc
       {
         // Creating the segment
         Segment segment(nodePositions[node1], nodePositions[node2]);
+        BoundingBox segment_bbox = segment.getBoundingBox();
         bool ok = true;
         double score = segment.getLength();
 
@@ -108,7 +109,8 @@ std::vector<Point> ObstacleAvoider::findPath(Point start, Point goal, double acc
 
           if (!ignoreCollisions.count(p) || ignoreCollisions[p] != oId)
           {
-            if ((nodeObstacle[node1] == oId && nodeObstacle[node2] == oId) || segment.intersects(obstacle))
+            if ((nodeObstacle[node1] == oId && nodeObstacle[node2] == oId) ||
+                (segment_bbox.intersects(obstacle.getBoundingBox()) && segment.intersects(obstacle)))
             {
               if (startOrGoal)
               {

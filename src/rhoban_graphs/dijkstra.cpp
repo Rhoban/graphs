@@ -5,7 +5,7 @@
 
 namespace rhoban_graphs
 {
-std::vector<Graph::Node> Djikstra::findPath(Graph& graph, Graph::Node start, Graph::Node goal, double* score)
+std::vector<Graph::Node> Dijkstra::findPath(Graph& graph, Graph::Node start, Graph::Node goal, double* score)
 {
   // Maps a node to the next node that should be taken
   std::map<Graph::Node, Graph::Node> path;

@@ -24,7 +24,7 @@ void testDijkstra()
   g.connect(1, 4, 50);
   g.connect(3, 4, 10);
 
-  auto result = Djikstra::findPath(g, 1, 3);
+  auto result = Dijkstra::findPath(g, 1, 3);
 
   for (auto& node : result)
   {

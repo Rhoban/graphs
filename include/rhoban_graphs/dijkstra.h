@@ -4,7 +4,7 @@
 
 namespace rhoban_graphs
 {
-class Djikstra
+class Dijkstra
 {
 public:
   static std::vector<Graph::Node> findPath(Graph& graph, Graph::Node start, Graph::Node goal, double* score = NULL);

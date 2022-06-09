@@ -127,8 +127,8 @@ std::vector<Point> ObstacleAvoider::findPath(Point start, Point goal, double acc
     }
   }
 
-  // Running Djikstra
-  auto result = Djikstra::findPath(graph, 0, 1, score);
+  // Running Dijkstra
+  auto result = Dijkstra::findPath(graph, 0, 1, score);
 
 #ifdef DEBUG
   // Draw the graph -DEBUG-

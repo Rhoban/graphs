@@ -15,16 +15,21 @@ using namespace rhoban_geometry;
 
 namespace rhoban_graphs
 {
-void ObstacleAvoider::addObstacle(Eigen::Vector2d center, double radius)
+int ObstacleAvoider::addObstacle(Eigen::Vector2d center, double radius)
 {
-  obstacles.push_back(Circle(center, radius));
+  int obstacle_id = obstacles.size();
+  obstacles[obstacle_id] = Circle(center, radius);
+
+  return obstacle_id;
 }
 
 typedef std::pair<Graph::Node, Graph::Node> NodePair;
 
-std::vector<Eigen::Vector2d> ObstacleAvoider::findPath(Eigen::Vector2d start, Eigen::Vector2d goal, double accuracy,
-                                                       double* score, std::function<bool(Eigen::Vector2d)> filter)
+ObstacleAvoider::Result ObstacleAvoider::findPath(Eigen::Vector2d start, Eigen::Vector2d goal, double accuracy,
+                                                  std::function<bool(Eigen::Vector2d)> filter)
 {
+  ObstacleAvoider::Result result;
+
   Graph graph;
 
   // Position of the nodes from the graph
@@ -39,14 +44,16 @@ std::vector<Eigen::Vector2d> ObstacleAvoider::findPath(Eigen::Vector2d start, Ei
   // Start and goal nodes
   nodePositions[0] = start;
   nodePositions[1] = goal;
-  nodeObstacle[0] = 0;
-  nodeObstacle[1] = 0;
+  nodeObstacle[0] = -1;
+  nodeObstacle[1] = -1;
 
   // Adding circle nodes
   size_t count = 2;
-  size_t oId = 1;
-  for (auto& obstacle : obstacles)
+  for (auto& entry : obstacles)
   {
+    int obstacle_id = entry.first;
+    rhoban_geometry::Circle obstacle = entry.second;
+
     Graph::Node first;
 
     double perimeter = 2 * M_PI * obstacle.getRadius();
@@ -60,12 +67,12 @@ std::vector<Eigen::Vector2d> ObstacleAvoider::findPath(Eigen::Vector2d start, Ei
       double x = obstacle.getCenter().x + cos(k * 2 * M_PI / steps) * (obstacle.getRadius() * 1.01);
       double y = obstacle.getCenter().y + sin(k * 2 * M_PI / steps) * (obstacle.getRadius() * 1.01);
       nodePositions[count] = Eigen::Vector2d(x, y);
-      nodeObstacle[count] = oId;
+      nodeObstacle[count] = obstacle_id;
 
       // Connecting sequential points
       if (k > 0)
       {
-        ignoreCollisions[NodePair(count - 1, count)] = oId;
+        ignoreCollisions[NodePair(count - 1, count)] = obstacle_id;
       }
       else
       {
@@ -74,10 +81,10 @@ std::vector<Eigen::Vector2d> ObstacleAvoider::findPath(Eigen::Vector2d start, Ei
       count++;
     }
     // Closing the circle
-    ignoreCollisions[NodePair(first, count - 1)] = oId;
-    oId++;
+    ignoreCollisions[NodePair(first, count - 1)] = obstacle_id;
   }
 
+  // Adding nodes to the graph
   for (auto& entry : nodePositions)
   {
     if (entry.first == 0 || entry.first == 1 || filter(entry.second))
@@ -100,15 +107,17 @@ std::vector<Eigen::Vector2d> ObstacleAvoider::findPath(Eigen::Vector2d start, Ei
         bool ok = true;
         double score = segment.getLength();
 
-        size_t oId = 1;
-        for (auto& obstacle : obstacles)
+        for (auto& entry : obstacles)
         {
+          int obstacle_id = entry.first;
+          rhoban_geometry::Circle obstacle = entry.second;
+
           auto p = NodePair(node1, node2);
           bool startOrGoal = (node1 == 0 || node1 == 1);
 
-          if (!ignoreCollisions.count(p) || ignoreCollisions[p] != oId)
+          if (!ignoreCollisions.count(p) || ignoreCollisions[p] != obstacle_id)
           {
-            if ((nodeObstacle[node1] == oId && nodeObstacle[node2] == oId) ||
+            if ((nodeObstacle[node1] == obstacle_id && nodeObstacle[node2] == obstacle_id) ||
                 (segment_bbox.intersects(obstacle.getBoundingBox()) && segment.intersects(obstacle)))
             {
               if (startOrGoal)
@@ -121,7 +130,6 @@ std::vector<Eigen::Vector2d> ObstacleAvoider::findPath(Eigen::Vector2d start, Ei
               }
             }
           }
-          oId++;
         }
 
         if (ok)
@@ -141,7 +149,7 @@ std::vector<Eigen::Vector2d> ObstacleAvoider::findPath(Eigen::Vector2d start, Ei
   //   std::cout << node << " : " << heuristic[node] << std::endl;
   // }
   // Running A*
-  auto result = PathFinder::findPath(graph, 0, 1, score, heuristic);
+  auto path_finder_result = PathFinder::findPath(graph, 0, 1, &result.score, heuristic);
   // auto result = PathFinder::findPath(graph, 0, 1, score);
 
 #ifdef DEBUG
@@ -161,34 +169,15 @@ std::vector<Eigen::Vector2d> ObstacleAvoider::findPath(Eigen::Vector2d start, Ei
 #endif
 
   std::vector<Eigen::Vector2d> path;
-  for (auto& node : result)
+  for (auto& node : path_finder_result)
   {
-    path.push_back(nodePositions[node]);
+    result.path.push_back(nodePositions[node]);
+    result.obstacles.push_back(nodeObstacle[node]);
   }
 
-  // Pruning
-  if (path.size())
+  if (!result.path.size())
   {
-    std::vector<Eigen::Vector2d> prunedPath;
-    Eigen::Vector2d last = path[0];
-    prunedPath.push_back(last);
-    for (size_t k = 1; k < path.size(); k++)
-    {
-      if (k == path.size() - 1 || (path[k] - last).norm() > accuracy * 0.75)
-      {
-        last = path[k];
-        prunedPath.push_back(last);
-      }
-    }
-    path = prunedPath;
-  }
-  else
-  {
-    std::cout << "PATH FIND ERROR!" << std::endl;
-    std::cout << start.x() << " " << start.y() << std::endl;
-    std::cout << goal.x() << " " << goal.y() << std::endl;
-    std::cout << obstacles[0].getCenter().x << " " << obstacles[0].getCenter().y << " " << obstacles[0].getRadius()
-              << std::endl;
+    throw std::runtime_error("No path found");
   }
 
 #ifdef DEBUG
@@ -199,7 +188,8 @@ std::vector<Eigen::Vector2d> ObstacleAvoider::findPath(Eigen::Vector2d start, Ei
   }
 #endif
 
-  return path;
+  result.path = path;
+  return result;
 }
 
 }  // namespace rhoban_graphs

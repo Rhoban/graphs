@@ -190,4 +190,13 @@ ObstacleAvoider::Result ObstacleAvoider::findPath(Eigen::Vector2d start, Eigen::
   return result;
 }
 
+ObstacleAvoider::Result ObstacleAvoider::findPathClipped(Eigen::Vector2d start, Eigen::Vector2d goal, double accuracy,
+                                                         double margin, double x_min, double x_max, double y_min,
+                                                         double y_max)
+{
+  return findPath(start, goal, accuracy, margin, [x_min, x_max, y_min, y_max](Eigen::Vector2d pt) {
+    return pt.x() >= x_min && pt.x() <= x_max && pt.y() >= y_min && pt.y() <= y_max;
+  });
+}
+
 }  // namespace rhoban_graphs

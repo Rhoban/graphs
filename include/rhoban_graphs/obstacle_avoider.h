@@ -23,6 +23,9 @@ public:
       Eigen::Vector2d start, Eigen::Vector2d goal, double accuracy = 0.25, double margin = 0.1,
       std::function<bool(Eigen::Vector2d)> filter = [](rhoban_geometry::Point) { return true; });
 
+  Result findPathClipped(Eigen::Vector2d start, Eigen::Vector2d goal, double accuracy = 0.25, double margin = 0.1,
+                         double x_min = -10, double x_max = 10, double y_min = -10, double y_max = 10);
+
 protected:
   std::map<int, rhoban_geometry::Circle> obstacles;
 };

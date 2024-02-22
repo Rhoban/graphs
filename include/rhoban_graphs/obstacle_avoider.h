@@ -20,7 +20,7 @@ public:
   int addObstacle(Eigen::Vector2d center, double radius);
 
   Result findPath(
-      Eigen::Vector2d start, Eigen::Vector2d goal, double accuracy = 0.25,
+      Eigen::Vector2d start, Eigen::Vector2d goal, double accuracy = 0.25, double margin = 0.1,
       std::function<bool(Eigen::Vector2d)> filter = [](rhoban_geometry::Point) { return true; });
 
 protected:

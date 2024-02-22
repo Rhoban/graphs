@@ -26,7 +26,7 @@ int ObstacleAvoider::addObstacle(Eigen::Vector2d center, double radius)
 typedef std::pair<Graph::Node, Graph::Node> NodePair;
 
 ObstacleAvoider::Result ObstacleAvoider::findPath(Eigen::Vector2d start, Eigen::Vector2d goal, double accuracy,
-                                                  std::function<bool(Eigen::Vector2d)> filter)
+                                                  double margin, std::function<bool(Eigen::Vector2d)> filter)
 {
   ObstacleAvoider::Result result;
 
@@ -64,8 +64,8 @@ ObstacleAvoider::Result ObstacleAvoider::findPath(Eigen::Vector2d start, Eigen::
     for (size_t k = 0; k < steps; k++)
     {
       // XXX: Parametrize the margin
-      double x = obstacle.getCenter().x + cos(k * 2 * M_PI / steps) * (obstacle.getRadius() * 1.01);
-      double y = obstacle.getCenter().y + sin(k * 2 * M_PI / steps) * (obstacle.getRadius() * 1.01);
+      double x = obstacle.getCenter().x + cos(k * 2 * M_PI / steps) * (obstacle.getRadius() + margin);
+      double y = obstacle.getCenter().y + sin(k * 2 * M_PI / steps) * (obstacle.getRadius() + margin);
       nodePositions[count] = Eigen::Vector2d(x, y);
       nodeObstacle[count] = obstacle_id;
 
@@ -168,7 +168,6 @@ ObstacleAvoider::Result ObstacleAvoider::findPath(Eigen::Vector2d start, Eigen::
   }
 #endif
 
-  std::vector<Eigen::Vector2d> path;
   for (auto& node : path_finder_result)
   {
     result.path.push_back(nodePositions[node]);
@@ -188,7 +187,6 @@ ObstacleAvoider::Result ObstacleAvoider::findPath(Eigen::Vector2d start, Eigen::
   }
 #endif
 
-  result.path = path;
   return result;
 }
 

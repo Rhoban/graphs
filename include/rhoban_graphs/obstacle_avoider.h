@@ -10,11 +10,11 @@ namespace rhoban_graphs
 class ObstacleAvoider
 {
 public:
-  void addObstacle(rhoban_geometry::Point center, double radius);
+  void addObstacle(Eigen::Vector2d center, double radius);
 
-  std::vector<rhoban_geometry::Point> findPath(
-      rhoban_geometry::Point start, rhoban_geometry::Point goal, double accuracy = 20, double* score = NULL,
-      std::function<bool(rhoban_geometry::Point)> filter = [](rhoban_geometry::Point) { return true; });
+  std::vector<Eigen::Vector2d> findPath(
+      Eigen::Vector2d start, Eigen::Vector2d goal, double accuracy = 20, double* score = NULL,
+      std::function<bool(Eigen::Vector2d)> filter = [](rhoban_geometry::Point) { return true; });
 
 protected:
   std::vector<rhoban_geometry::Circle> obstacles;

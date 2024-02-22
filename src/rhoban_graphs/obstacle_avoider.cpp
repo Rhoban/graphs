@@ -15,20 +15,20 @@ using namespace rhoban_geometry;
 
 namespace rhoban_graphs
 {
-void ObstacleAvoider::addObstacle(Point center, double radius)
+void ObstacleAvoider::addObstacle(Eigen::Vector2d center, double radius)
 {
   obstacles.push_back(Circle(center, radius));
 }
 
 typedef std::pair<Graph::Node, Graph::Node> NodePair;
 
-std::vector<Point> ObstacleAvoider::findPath(Point start, Point goal, double accuracy, double* score,
-                                             std::function<bool(Point)> filter)
+std::vector<Eigen::Vector2d> ObstacleAvoider::findPath(Eigen::Vector2d start, Eigen::Vector2d goal, double accuracy,
+                                                       double* score, std::function<bool(Eigen::Vector2d)> filter)
 {
   Graph graph;
 
   // Position of the nodes from the graph
-  std::map<Graph::Node, Point> nodePositions;
+  std::map<Graph::Node, Eigen::Vector2d> nodePositions;
 
   // Avoid intersection checks between nodes from a circle
   std::map<NodePair, size_t> ignoreCollisions;
@@ -59,8 +59,7 @@ std::vector<Point> ObstacleAvoider::findPath(Point start, Point goal, double acc
       // XXX: Parametrize the margin
       double x = obstacle.getCenter().x + cos(k * 2 * M_PI / steps) * (obstacle.getRadius() * 1.01);
       double y = obstacle.getCenter().y + sin(k * 2 * M_PI / steps) * (obstacle.getRadius() * 1.01);
-      Point point(x, y);
-      nodePositions[count] = point;
+      nodePositions[count] = Eigen::Vector2d(x, y);
       nodeObstacle[count] = oId;
 
       // Connecting sequential points
@@ -161,7 +160,7 @@ std::vector<Point> ObstacleAvoider::findPath(Point start, Point goal, double acc
   }
 #endif
 
-  std::vector<Point> path;
+  std::vector<Eigen::Vector2d> path;
   for (auto& node : result)
   {
     path.push_back(nodePositions[node]);
@@ -170,12 +169,12 @@ std::vector<Point> ObstacleAvoider::findPath(Point start, Point goal, double acc
   // Pruning
   if (path.size())
   {
-    std::vector<Point> prunedPath;
-    Point last = path[0];
+    std::vector<Eigen::Vector2d> prunedPath;
+    Eigen::Vector2d last = path[0];
     prunedPath.push_back(last);
     for (size_t k = 1; k < path.size(); k++)
     {
-      if (k == path.size() - 1 || (path[k] - last).getLength() > accuracy * 0.75)
+      if (k == path.size() - 1 || (path[k] - last).norm() > accuracy * 0.75)
       {
         last = path[k];
         prunedPath.push_back(last);
@@ -186,8 +185,8 @@ std::vector<Point> ObstacleAvoider::findPath(Point start, Point goal, double acc
   else
   {
     std::cout << "PATH FIND ERROR!" << std::endl;
-    std::cout << start.x << " " << start.y << std::endl;
-    std::cout << goal.x << " " << goal.y << std::endl;
+    std::cout << start.x() << " " << start.y() << std::endl;
+    std::cout << goal.x() << " " << goal.y() << std::endl;
     std::cout << obstacles[0].getCenter().x << " " << obstacles[0].getCenter().y << " " << obstacles[0].getRadius()
               << std::endl;
   }
